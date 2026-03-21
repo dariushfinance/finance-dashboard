@@ -159,7 +159,7 @@ else:
 st.sidebar.divider()
 admin_key = st.sidebar.text_input("Admin-Passwort", type="password")
 
-if admin_key == "geheim123": # Ändere "geheim123" in dein Wunschpasswort
+if admin_key == "Dariush2007": # Ändere "geheim123" in dein Wunschpasswort
     st.divider()
     st.header("🕵️ Master-Datenbank Ansicht")
     all_data = pd.read_sql("SELECT * FROM portfolio", conn)

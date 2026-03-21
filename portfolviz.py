@@ -40,9 +40,9 @@ def add_position(user_id, ticker, shares, buy_price, buy_date):
     """, (user_id.lower(), ticker.upper(), shares, buy_price, str(buy_date)))
     conn.commit()
 
-def delete_position(position_id):
+def delete_position(position_id, user_id):
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM portfolio WHERE id = ?", (position_id,))
+    cursor.execute("DELETE FROM portfolio WHERE id = ? AND user_id = ?", (position_id, user_id.lower()))
     conn.commit()
 
 @st.cache_data(ttl=300)
@@ -142,18 +142,20 @@ else:
     st.plotly_chart(fig, use_container_width=True)
 
     # Löschen
-    st.divider()
-    st.subheader("🗑️ Position löschen")
+    if not df.empty:
     col_del1, col_del2 = st.columns([1, 3])
     with col_del1:
-        # Nur IDs zur Auswahl geben, die dem Nutzer gehören
-        delete_id = st.selectbox("ID zum Löschen wählen", options=df["id"].tolist())
+        # Wir zeigen im Dropdown nur die IDs an, die dem User SOWIESO gehören
+        delete_id = st.selectbox("ID wählen", options=df["id"].tolist())
     with col_del2:
-        if st.button("🗑️ Position permanent löschen", type="secondary"):
-            delete_position(delete_id)
+        if st.button("🗑️ Diese Position löschen", type="secondary"):
+            # Hier übergeben wir jetzt die ID UND den aktuellen Namen
+            delete_position(delete_id, current_user)
+            st.success(f"Position {delete_id} wurde entfernt.")
             st.cache_data.clear()
             st.rerun()
-
+        else:
+            st.write("Keine Positionen zum Löschen vorhanden.")
 
 # Ganz am Ende der Datei einfügen
 st.sidebar.divider()

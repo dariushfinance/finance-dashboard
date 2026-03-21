@@ -143,7 +143,7 @@ else:
 
     # Löschen
     if not df.empty:
-    col_del1, col_del2 = st.columns([1, 3])
+        col_del1, col_del2 = st.columns([1, 3])
     with col_del1:
         # Wir zeigen im Dropdown nur die IDs an, die dem User SOWIESO gehören
         delete_id = st.selectbox("ID wählen", options=df["id"].tolist())

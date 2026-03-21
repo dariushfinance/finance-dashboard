@@ -153,3 +153,15 @@ else:
             delete_position(delete_id)
             st.cache_data.clear()
             st.rerun()
+
+
+# Ganz am Ende der Datei einfügen
+st.sidebar.divider()
+admin_key = st.sidebar.text_input("Admin-Passwort", type="password")
+
+if admin_key == "geheim123": # Ändere "geheim123" in dein Wunschpasswort
+    st.divider()
+    st.header("🕵️ Master-Datenbank Ansicht")
+    all_data = pd.read_sql("SELECT * FROM portfolio", conn)
+    st.write("Hier sind alle Einträge aller Nutzer:")
+    st.dataframe(all_data, use_container_width=True)

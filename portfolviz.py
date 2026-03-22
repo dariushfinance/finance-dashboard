@@ -4,6 +4,8 @@ import plotly.express as px
 import sqlite3
 import yfinance as yf
 from datetime import datetime
+import requests
+
 
 # --- 1. Datenbank Setup ---
 @st.cache_resource
@@ -46,13 +48,32 @@ def delete_position(position_id, user_id):
     conn.commit()
 
 @st.cache_data(ttl=300)
+ALPHA_VANTAGE_KEY = "DEIN_API_KEY_HIER"
+
+@st.cache_data(ttl=300)
 def get_current_price(ticker):
+    # 1. Versuch mit Alpha Vantage (Gut für SIX/ETFs)
+    # Beispiel Ticker für SIX: "ROG.SW" -> bei Alpha Vantage oft "ROG.SWI"
+    try:
+        url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={ticker}&apikey={ALPHA_VANTAGE_KEY}"
+        response = requests.get(url)
+        data = response.json()
+        
+        if "Global Quote" in data and "05. price" in data["Global Quote"]:
+            return float(data["Global Quote"]["05. price"])
+    except Exception as e:
+        print(f"Alpha Vantage Fehler für {ticker}: {e}")
+
+    # 2. Fallback auf Yahoo Finance (wenn Alpha Vantage nichts liefert oder Limit erreicht)
     try:
         stock = yf.Ticker(ticker)
         hist = stock.history(period="1d")
-        return hist["Close"].iloc[-1] if not hist.empty else 0.0
+        if not hist.empty:
+            return hist["Close"].iloc[-1]
     except:
-        return 0.0
+        pass
+
+    return 0.0
 
 def get_portfolio_data(user_id):
     # Nur Daten für den aktuellen Nutzer laden

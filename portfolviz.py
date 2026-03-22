@@ -8,7 +8,7 @@ import requests
 
 ALPHA_VANTAGE_KEY = "1GYL3R16Q3QTXQAT"
 
-# --- 1. Datenbank Setup ---
+# Database
 @st.cache_resource
 def get_connection():
     conn = sqlite3.connect("portfolio.db", check_same_thread=False)
@@ -32,7 +32,7 @@ def get_connection():
 
 conn = get_connection()
 
-# --- 2. Logik-Funktionen ---
+# Basic Functions
 def add_position(user_id, ticker, shares, buy_price, buy_date):
     cursor = conn.cursor()
     cursor.execute("""
@@ -86,31 +86,20 @@ def plot_portfolio_history_accurate(df):
     
     with st.spinner("Historie wird präzise berechnet..."):
         try:
-            # 1. Ticker und frühestes Datum vorbereiten
+            
             tickers = df["ticker"].unique().tolist()
             earliest_date = pd.to_datetime(df["buy_date"]).min().strftime('%Y-%m-%d')
-            
-            # 2. Daten laden
-            # Wir nutzen 'multi_level_index=False', um eine flache Tabelle zu bekommen
             data = yf.download(tickers, start=earliest_date, interval="1d")
             
             if data.empty:
                 st.warning("Keine historischen Daten gefunden.")
                 return
-
-            # WICHTIG: Wir extrahieren nur die Schlusskurse ('Close')
-            # yfinance gibt bei einem Ticker oft eine Series zurück, bei vielen ein DF
             if "Close" in data.columns:
                 hist_data = data["Close"]
             else:
-                # Fallback für neuere yfinance Versionen bei Einzel-Tickern
                 hist_data = data
-
-            # Falls es eine Series ist (nur 1 Ticker), in DataFrame umwandeln
             if isinstance(hist_data, pd.Series):
                 hist_data = hist_data.to_frame(name=tickers[0])
-
-            # 3. Daily Portfolio Value berechnen
             daily_values = pd.DataFrame(index=hist_data.index)
             daily_values["Total_Value"] = 0.0
 
@@ -118,21 +107,13 @@ def plot_portfolio_history_accurate(df):
                 t = row["ticker"]
                 shares = row["shares"]
                 buy_dt = pd.to_datetime(row["buy_date"])
-                
-                # Check ob Ticker in den Daten ist (manchmal fehlen Ticker bei Fehlern)
                 if t in hist_data.columns:
-                    # Preis-Daten für diesen Ticker holen & Lücken füllen
                     prices = hist_data[t].ffill().fillna(0)
-                    
-                    # Maske: Nur ab Kaufdatum
-                    # Wir machen beide Indizes "timezone-naive", um Fehler zu vermeiden
                     prices.index = prices.index.tz_localize(None)
                     buy_dt = buy_dt.tz_localize(None)
                     
                     mask = prices.index >= buy_dt
                     daily_values.loc[mask, "Total_Value"] += prices.loc[mask] * shares
-
-            # 4. Chart zeichnen
             if daily_values["Total_Value"].max() > 0:
                 fig = px.area(
                     daily_values, 
@@ -141,7 +122,6 @@ def plot_portfolio_history_accurate(df):
                     labels={"Total_Value": "Wert ($)", "index": "Datum"}
                 )
                 
-                # Styling
                 fig.update_layout(
                     xaxis_title="Datum",
                     yaxis_title="Portfolio Wert",
@@ -155,10 +135,7 @@ def plot_portfolio_history_accurate(df):
                 
         except Exception as e:
             st.error(f"Fehler bei der Chart-Erstellung: {e}")
-            # Optional: Zeige das Datenformat für Debugging (nur für dich als Entwickler)
-            # st.write(data.head())
-            
-# --- 3. Streamlit UI ---
+           
 st.set_page_config(page_title="Portfolio Tool", layout="wide")
 st.title("📈 Portfolio Intelligence Tool")
 
@@ -185,7 +162,6 @@ if not current_user:
 elif df.empty:
     st.info(f"Das Portfolio '{current_user}' ist leer.")
 else:
-    # Metriken
     total_val = df['current_value'].sum()
     total_inv = df['invested'].sum()
     total_pnl = df['pnl'].sum()
@@ -200,10 +176,7 @@ else:
     st.divider()
     st.subheader(f"📋 Positionen von: {current_user}")
     
-    # Tabelle anzeigen
     st.dataframe(df[["id", "ticker", "shares", "buy_price", "current_price", "pnl", "return_%"]], use_container_width=True, hide_index=True)
-
-    # Charts
     col_left, col_right = st.columns(2)
     with col_left:
         st.subheader("🍕 Verteilung")
@@ -211,7 +184,6 @@ else:
         st.plotly_chart(fig_pie, use_container_width=True)
     
     with col_right:
-        # Kleinerer Lösch-Bereich
         st.subheader("🗑️ Position löschen")
         with st.expander("Klicke zum Löschen"):
             del_id = st.selectbox("ID wählen", options=df["id"].tolist())
@@ -221,10 +193,8 @@ else:
                 st.rerun()
 
     st.divider()
-    # Hier wird die Historie aufgerufen
     plot_portfolio_history_accurate(df)
 
-# --- ADMIN BEREICH ---
 st.sidebar.divider()
 admin_key = st.sidebar.text_input("Admin-Passwort", type="password")
 if admin_key == "Dariush2007":

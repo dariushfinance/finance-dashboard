@@ -204,6 +204,9 @@ def plot_portfolio_history_accurate(df):
             labels={"Total_Value": "Wert", "index": "Datum"}
         )
         st.plotly_chart(fig, use_container_width=True)
+        st.divider()
+        plot_portfolio_history_accurate(df)
+        st.divider()
     
 
     # Löschen

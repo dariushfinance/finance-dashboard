@@ -184,7 +184,7 @@ else:
 st.sidebar.divider()
 admin_key = st.sidebar.text_input("Admin-Passwort", type="password")
 
-if admin_key == "geheim123": # <--- Hier dein Passwort eintragen
+if admin_key == "Dariush2007": # <--- Hier dein Passwort eintragen
     st.divider()
     st.header("🕵️ Master-Datenbank")
 

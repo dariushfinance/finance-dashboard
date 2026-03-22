@@ -48,7 +48,7 @@ def delete_position(position_id, user_id):
     conn.commit()
 
 @st.cache_data(ttl=300)
-ALPHA_VANTAGE_KEY = "1GYL3R16Q3QTXQAT "
+ALPHA_VANTAGE_KEY = "1GYL3R16Q3QTXQAT"
 
 @st.cache_data(ttl=300)
 def get_current_price(ticker):

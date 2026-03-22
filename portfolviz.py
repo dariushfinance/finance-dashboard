@@ -180,12 +180,40 @@ else:
             st.write("Keine Positionen zum Löschen vorhanden.")
 
 # Ganz am Ende der Datei einfügen
+# --- ADMIN BEREICH (Ganz unten) ---
 st.sidebar.divider()
 admin_key = st.sidebar.text_input("Admin-Passwort", type="password")
 
-if admin_key == "Dariush2007": # Ändere "geheim123" in dein Wunschpasswort
+if admin_key == "geheim123": # <--- Hier dein Passwort eintragen
     st.divider()
-    st.header("🕵️ Master-Datenbank Ansicht")
-    all_data = pd.read_sql("SELECT * FROM portfolio", conn)
-    st.write("Hier sind alle Einträge aller Nutzer:")
-    st.dataframe(all_data, use_container_width=True)
+    st.header("🕵️ Master-Datenbank")
+
+    # 1. Alle Daten aus der DB ziehen
+    all_data_df = pd.read_sql("SELECT * FROM portfolio ORDER BY user_id ASC", conn)
+
+    if not all_data_df.empty:
+        # 2. Filter-Optionen erstellen
+        # Wir holen alle einzigartigen User-Namen für das Dropdown
+        user_list = ["ALLE ANZEIGEN"] + sorted(all_data_df["user_id"].unique().tolist())
+        
+        selected_user = st.selectbox("Filter nach User:", options=user_list)
+
+        # 3. Daten filtern
+        if selected_user == "ALLE ANZEIGEN":
+            view_df = all_data_df
+        else:
+            view_df = all_data_df[all_data_df["user_id"] == selected_user]
+
+        # 4. Zusammenfassung für den Admin
+        col_a, col_b = st.columns(2)
+        col_a.metric("Anzahl Positionen", len(view_df))
+        col_b.metric("Aktive User", len(all_data_df["user_id"].unique()))
+
+        # 5. Die Tabelle anzeigen
+        st.write(f"Datensätze für: **{selected_user}**")
+        st.dataframe(view_df, use_container_width=True, hide_index=True)
+        
+        # 6. Kleiner "Lösch-Schutz" Hinweis
+        st.caption("Hinweis: Als Admin siehst du hier die Rohdaten inklusive der Datenbank-IDs.")
+    else:
+        st.info("Die Datenbank ist noch komplett leer.")

@@ -5,6 +5,7 @@ import sqlite3
 import yfinance as yf
 from datetime import datetime
 import requests
+import plotly.express as px
 
 ALPHA_VANTAGE_KEY = "1GYL3R16Q3QTXQAT"
 
@@ -162,6 +163,48 @@ else:
     st.subheader("🍕 Portfolio-Verteilung")
     fig = px.pie(df, values='current_value', names='ticker', hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
     st.plotly_chart(fig, use_container_width=True)
+
+def plot_portfolio_history_accurate(df):
+    if df.empty:
+        return
+
+    st.subheader("📈 Portfolio-Wertentwicklung (Zeitstrahl)")
+    
+    with st.spinner("Historie wird präzise berechnet..."):
+        # 1. Alle Ticker und das früheste Kaufdatum finden
+        tickers = df["ticker"].unique().tolist()
+        earliest_date = pd.to_datetime(df["buy_date"]).min()
+        
+        # 2. Historische Kurse ab dem frühesten Kaufdatum laden
+        hist_data = yf.download(tickers, start=earliest_date, interval="1d")["Close"]
+        
+        if len(tickers) == 1:
+            hist_data = hist_data.to_frame(name=tickers[0])
+
+        # 3. Daily Portfolio Value mit "Buy-Date-Check"
+        daily_values = pd.DataFrame(index=hist_data.index)
+        daily_values["Total_Value"] = 0.0
+
+        for _, row in df.iterrows():
+            ticker = row["ticker"]
+            shares = row["shares"]
+            buy_date = pd.to_datetime(row["buy_date"])
+            
+            if ticker in hist_data.columns:
+                # Wir erstellen eine Maske: Nur Tage AB dem Kaufdatum zählen
+                mask = hist_data.index >= buy_date
+                # Nur für diese Tage addieren wir (Kurs * Anteile)
+                daily_values.loc[mask, "Total_Value"] += hist_data.loc[mask, ticker] * shares
+
+        # 4. Chart zeichnen
+        fig = px.area( # 'area' sieht oft schicker aus für Vermögensaufbau
+            daily_values, 
+            y="Total_Value",
+            title="Dein tatsächlicher Vermögensverlauf",
+            labels={"Total_Value": "Wert", "index": "Datum"}
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
 
     # Löschen
     if not df.empty:

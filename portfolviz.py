@@ -86,22 +86,28 @@ def plot_portfolio_history_accurate(df):
     
     with st.spinner("Historie wird präzise berechnet..."):
         try:
-            # 1. Alle Ticker und das früheste Kaufdatum finden
+            # 1. Ticker und frühestes Datum vorbereiten
             tickers = df["ticker"].unique().tolist()
-            earliest_date = pd.to_datetime(df["buy_date"]).min()
+            earliest_date = pd.to_datetime(df["buy_date"]).min().strftime('%Y-%m-%d')
             
-            # 2. Historische Kurse laden
+            # 2. Daten laden
+            # Wir nutzen 'multi_level_index=False', um eine flache Tabelle zu bekommen
             data = yf.download(tickers, start=earliest_date, interval="1d")
             
-            # Wichtig: yfinance liefert je nach Ticker-Anzahl unterschiedliche Strukturen
-            if data.empty or "Close" not in data:
-                st.warning("Keine historischen Kursdaten gefunden. Prüfe die Ticker-Symbole.")
+            if data.empty:
+                st.warning("Keine historischen Daten gefunden.")
                 return
-                
-            hist_data = data["Close"]
-            
-            # Falls es nur ein Ticker ist, macht pandas daraus eine Serie -> wir machen ein DataFrame
-            if len(tickers) == 1:
+
+            # WICHTIG: Wir extrahieren nur die Schlusskurse ('Close')
+            # yfinance gibt bei einem Ticker oft eine Series zurück, bei vielen ein DF
+            if "Close" in data.columns:
+                hist_data = data["Close"]
+            else:
+                # Fallback für neuere yfinance Versionen bei Einzel-Tickern
+                hist_data = data
+
+            # Falls es eine Series ist (nur 1 Ticker), in DataFrame umwandeln
+            if isinstance(hist_data, pd.Series):
                 hist_data = hist_data.to_frame(name=tickers[0])
 
             # 3. Daily Portfolio Value berechnen
@@ -109,33 +115,48 @@ def plot_portfolio_history_accurate(df):
             daily_values["Total_Value"] = 0.0
 
             for _, row in df.iterrows():
-                ticker = row["ticker"]
+                t = row["ticker"]
                 shares = row["shares"]
-                buy_date = pd.to_datetime(row["buy_date"])
+                buy_dt = pd.to_datetime(row["buy_date"])
                 
-                if ticker in hist_data.columns:
-                    # Sicherstellen, dass die Indizes (Daten) vergleichbar sind
-                    mask = hist_data.index >= buy_date
-                    daily_values.loc[mask, "Total_Value"] += hist_data.loc[mask, ticker] * shares
+                # Check ob Ticker in den Daten ist (manchmal fehlen Ticker bei Fehlern)
+                if t in hist_data.columns:
+                    # Preis-Daten für diesen Ticker holen & Lücken füllen
+                    prices = hist_data[t].ffill().fillna(0)
+                    
+                    # Maske: Nur ab Kaufdatum
+                    # Wir machen beide Indizes "timezone-naive", um Fehler zu vermeiden
+                    prices.index = prices.index.tz_localize(None)
+                    buy_dt = buy_dt.tz_localize(None)
+                    
+                    mask = prices.index >= buy_dt
+                    daily_values.loc[mask, "Total_Value"] += prices.loc[mask] * shares
 
             # 4. Chart zeichnen
-            if not daily_values["Total_Value"].any():
-                st.info("Warte auf Kursdaten oder prüfe Kaufdaten...")
-                return
-
-            fig = px.area(
-                daily_values, 
-                y="Total_Value",
-                title="Dein tatsächlicher Vermögensverlauf",
-                labels={"Total_Value": "Wert", "index": "Datum"}
-            )
-            
-            # Design-Update
-            fig.update_traces(line_color='#00CC96')
-            st.plotly_chart(fig, use_container_width=True)
-            
+            if daily_values["Total_Value"].max() > 0:
+                fig = px.area(
+                    daily_values, 
+                    y="Total_Value",
+                    title=f"Gesamtwert-Entwicklung für {current_user}",
+                    labels={"Total_Value": "Wert ($)", "index": "Datum"}
+                )
+                
+                # Styling
+                fig.update_layout(
+                    xaxis_title="Datum",
+                    yaxis_title="Portfolio Wert",
+                    hovermode="x unified"
+                )
+                fig.update_traces(line_color='#22c55e', fillcolor='rgba(34, 197, 94, 0.2)')
+                
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Historische Daten konnten nicht berechnet werden (evtl. liegt das Kaufdatum in der Zukunft oder Ticker ungültig).")
+                
         except Exception as e:
             st.error(f"Fehler bei der Chart-Erstellung: {e}")
+            # Optional: Zeige das Datenformat für Debugging (nur für dich als Entwickler)
+            # st.write(data.head())
             
 # --- 3. Streamlit UI ---
 st.set_page_config(page_title="Portfolio Tool", layout="wide")

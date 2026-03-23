@@ -9,17 +9,7 @@ import requests
 
 # --- Konfiguration ---
 st.set_page_config(page_title="Portfolio Intelligence", layout="wide")
-st.cache_resource.clear()
-st.write("=== DEBUG ===")
-try:
-    st.write("Secrets keys:", list(st.secrets.keys()))
-    st.write("DB Host:", st.secrets["host"])
-    st.write("DB User:", st.secrets["user"])
-    st.write("DB Port:", st.secrets["port"])
-    
-except Exception as e:
-    st.write("Secrets Fehler:", e)
-st.write("=== DEBUG ENDE ===")
+
 # --- Datenbank Verbindung (OPTIMIERT) ---
 @st.cache_resource
 def get_connection():

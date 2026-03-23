@@ -23,7 +23,14 @@ st.write("=== DEBUG ENDE ===")
 @st.cache_resource
 def get_connection():
     try:
-        conn = psycopg2.connect(st.secrets["DB_URL"])
+        conn = psycopg2.connect(
+            host=st.secrets["host"],
+            port=st.secrets["port"],
+            dbname=st.secrets["database"],
+            user=st.secrets["user"],
+            password=st.secrets["password"],
+            sslmode=st.secrets["sslmode"]
+        )
         return conn
     except Exception as e:
         st.error(f"Datenbank-Fehler: {e}")

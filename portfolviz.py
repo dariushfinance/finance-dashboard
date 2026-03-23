@@ -18,7 +18,12 @@ ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
 @st.cache_resource
 def get_connection():
     try:
-        conn = psycopg2.connect(st.secrets["DB_URL"])
+        url = st.secrets["DB_URL"]
+        # Sicherheits-Check: Wir erzwingen Port 6543, falls 5432 drinsteht
+        if ":5432" in url:
+            url = url.replace(":5432", ":6543")
+        
+        conn = psycopg2.connect(url)
         return conn
     except Exception as e:
         st.error(f"Verbindung zu Supabase fehlgeschlagen: {e}")

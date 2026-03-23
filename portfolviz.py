@@ -16,8 +16,10 @@ ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
 
 # --- Datenbank Verbindung ---
 @st.cache_resource
+@st.cache_resource
 def get_connection():
     try:
+        # Hier werden die Einzelwerte aus den Secrets gezogen
         conn = psycopg2.connect(
             host=st.secrets["DB_HOST"],
             database=st.secrets["DB_NAME"],

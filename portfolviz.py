@@ -127,6 +127,8 @@ def plot_portfolio_history_accurate(df, current_user):
     except Exception as e:
         st.error(f"Fehler im Chart: {e}")
 
+st.divider()
+show_benchmark(df)
 # --- UI ---
 with st.sidebar:
     st.header("👤 Benutzerprofil")

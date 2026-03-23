@@ -126,9 +126,6 @@ def plot_portfolio_history_accurate(df, current_user):
         st.plotly_chart(fig, use_container_width=True)
     except Exception as e:
         st.error(f"Fehler im Chart: {e}")
-
-
-show_benchmark(df)
 # --- UI ---
 with st.sidebar:
     st.header("👤 Benutzerprofil")

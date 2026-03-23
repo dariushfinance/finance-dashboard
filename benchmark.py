@@ -1,8 +1,27 @@
 import streamlit as st
 import pandas as pd
-import psycopg2
 import yfinance as yf
 import plotly.graph_objects as go
+
+def show_benchmark(df_portfolio):
+    st.subheader("🏆 Portfolio vs. S&P 500 Vergleich")
+    
+    if df_portfolio.empty:
+        st.info("Füge erst Positionen hinzu, um den Vergleich zu sehen.")
+        return
+
+    # Startdatum ermitteln
+    start_date = pd.to_datetime(df_portfolio["buy_date"]).min()
+    
+    # S&P 500 laden
+    with st.spinner('Lade Benchmark-Daten...'):
+        spy = yf.download("^GSPC", start=start_date)["Close"]
+        tickers = df_portfolio["ticker"].unique().tolist()
+        hist_data = yf.download(tickers, start=start_date)["Close"]
+    
+    # ... (hier kommt der restliche Berechnungs-Code von vorhin) ...
+    # Am Ende der Funktion den Plotly-Chart anzeigen:
+    # st.plotly_chart(fig, use_container_width=True)
 
 # Verbindung wie gehabt
 def get_connection():

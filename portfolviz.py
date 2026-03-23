@@ -127,7 +127,7 @@ def plot_portfolio_history_accurate(df, current_user):
     except Exception as e:
         st.error(f"Fehler im Chart: {e}")
 
-st.divider()
+
 show_benchmark(df)
 # --- UI ---
 with st.sidebar:
@@ -195,5 +195,6 @@ if admin_key == st.secrets["ADMIN_PASSWORD"]:
     all_data = pd.read_sql("SELECT * FROM portfolio", get_connection())
     st.dataframe(all_data, use_container_width=True)
 
+st.divider()
 if not df.empty:
     show_benchmark(df)

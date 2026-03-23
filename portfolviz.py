@@ -14,16 +14,8 @@ st.set_page_config(page_title="Portfolio Intelligence", layout="wide")
 @st.cache_resource
 def get_connection():
     try:
-        # Einzelne Parameter statt einer langen URL nutzen
-        conn = psycopg2.connect(
-            host=st.secrets["DB_HOST"],
-            database=st.secrets["DB_NAME"],
-            user=st.secrets["DB_USER"],
-            password=st.secrets["DB_PASS"],
-            port=st.secrets["DB_PORT"],
-            sslmode="require",
-            connect_timeout=10
-        )
+        # Wir nutzen wieder die URL aus den Secrets
+        conn = psycopg2.connect(st.secrets["DB_URL"])
         return conn
     except Exception as e:
         st.error(f"Datenbank-Fehler: {e}")

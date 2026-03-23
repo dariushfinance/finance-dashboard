@@ -6,6 +6,7 @@ from psycopg2.extras import RealDictCursor
 import yfinance as yf
 from datetime import datetime
 import requests
+from benchmark import show_benchmark
 
 # --- Konfiguration ---
 st.set_page_config(page_title="Portfolio Intelligence", layout="wide")

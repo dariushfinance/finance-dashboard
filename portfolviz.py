@@ -150,6 +150,7 @@ st.title("📈 Portfolio Intelligence Tool")
 
 if not current_user:
     st.warning("Bitte gib einen Namen ein.")
+    df = pd.DataFrame()
 else:
     df = get_portfolio_data(current_user)
     if df.empty:
@@ -193,3 +194,6 @@ if admin_key == st.secrets["ADMIN_PASSWORD"]:
     st.header("🕵️ Master-Datenbank")
     all_data = pd.read_sql("SELECT * FROM portfolio", get_connection())
     st.dataframe(all_data, use_container_width=True)
+
+if not df.empty:
+    show_benchmark(df)

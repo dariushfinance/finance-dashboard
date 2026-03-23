@@ -9,6 +9,7 @@ import requests
 
 # --- Konfiguration ---
 st.set_page_config(page_title="Portfolio Intelligence", layout="wide")
+st.cache_resource.clear()
 st.write("=== DEBUG ===")
 try:
     st.write("Secrets keys:", list(st.secrets.keys()))

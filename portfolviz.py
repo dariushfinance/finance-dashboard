@@ -15,7 +15,7 @@ try:
     st.write("DB Host:", st.secrets["host"])
     st.write("DB User:", st.secrets["user"])
     st.write("DB Port:", st.secrets["port"])
-    st.write("DB URL:", st.secrets["DB_URL"][:50], "...")  # nur die ersten 50 Zeichen
+    
 except Exception as e:
     st.write("Secrets Fehler:", e)
 st.write("=== DEBUG ENDE ===")

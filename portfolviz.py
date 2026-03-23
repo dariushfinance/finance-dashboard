@@ -12,23 +12,24 @@ st.set_page_config(page_title="Portfolio Intelligence", layout="wide")
 st.write("=== DEBUG ===")
 try:
     st.write("Secrets keys:", list(st.secrets.keys()))
-    st.write("DB Host:", st.secrets["database"]["host"])
-    st.write("DB User:", st.secrets["database"]["user"])
+    st.write("DB Host:", st.secrets["host"])
+    st.write("DB User:", st.secrets["user"])
 except Exception as e:
     st.write("Secrets Fehler:", e)
 st.write("=== DEBUG ENDE ===")
 # --- Datenbank Verbindung (OPTIMIERT) ---
 @st.cache_resource
 @st.cache_resource
+@st.cache_resource
 def get_connection():
     try:
         conn = psycopg2.connect(
-            host=st.secrets["database"]["host"],
-            port=st.secrets["database"]["port"],
-            dbname=st.secrets["database"]["database"],
-            user=st.secrets["database"]["user"],
-            password=st.secrets["database"]["password"],
-            sslmode=st.secrets["database"]["sslmode"]
+            host=st.secrets["host"],
+            port=st.secrets["port"],
+            dbname=st.secrets["database"],
+            user=st.secrets["user"],
+            password=st.secrets["password"],
+            sslmode=st.secrets["sslmode"]
         )
         return conn
     except Exception as e:

@@ -12,10 +12,17 @@ st.set_page_config(page_title="Portfolio Intelligence", layout="wide")
 
 # --- Datenbank Verbindung (OPTIMIERT) ---
 @st.cache_resource
+@st.cache_resource
 def get_connection():
     try:
-        # Wir nutzen wieder die URL aus den Secrets
-        conn = psycopg2.connect(st.secrets["DB_URL"])
+        conn = psycopg2.connect(
+            host=st.secrets["database"]["host"],
+            port=st.secrets["database"]["port"],
+            dbname=st.secrets["database"]["database"],
+            user=st.secrets["database"]["user"],
+            password=st.secrets["database"]["password"],
+            sslmode=st.secrets["database"]["sslmode"]
+        )
         return conn
     except Exception as e:
         st.error(f"Datenbank-Fehler: {e}")
@@ -25,6 +32,7 @@ conn = get_connection()
 
 # --- Hilfsfunktionen ---
 def add_position(user_id, ticker, shares, buy_price, buy_date):
+    conn = get_connection()
     if conn is None: return
     cursor = conn.cursor()
     try:
@@ -39,6 +47,7 @@ def add_position(user_id, ticker, shares, buy_price, buy_date):
         cursor.close()
 
 def delete_position(position_id, user_id):
+    conn = get_connection()
     if conn is None: return
     cursor = conn.cursor()
     try:
@@ -70,6 +79,7 @@ def get_current_price(ticker):
     return 0.0
 
 def get_portfolio_data(user_id):
+    conn = get_connection()
     if conn is None: return pd.DataFrame()
     query = "SELECT * FROM portfolio WHERE user_id = %s"
     df = pd.read_sql(query, conn, params=(user_id.lower(),))
@@ -179,5 +189,5 @@ admin_key = st.sidebar.text_input("Admin-Bereich", type="password")
 if admin_key == st.secrets["ADMIN_PASSWORD"]:
     st.divider()
     st.header("🕵️ Master-Datenbank")
-    all_data = pd.read_sql("SELECT * FROM portfolio", conn)
+    all_data = pd.read_sql("SELECT * FROM portfolio", get_connection())
     st.dataframe(all_data, use_container_width=True)

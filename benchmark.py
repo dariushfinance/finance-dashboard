@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import yfinance as yf
 import plotly.graph_objects as go
+import numpy as np
 
 def show_benchmark(df_portfolio):
     st.subheader("🏆 Portfolio vs. S&P 500 Vergleich")
@@ -54,3 +55,15 @@ def show_benchmark(df_portfolio):
                       legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
     
     st.plotly_chart(fig, use_container_width=True)
+
+    port_ret = combined["Portfolio_Value"].pct_change().dropna()
+    sp_ret = combined["SP500_Price"].pct_change().dropna()
+    aligned = pd.concat([port_ret, sp_ret], axis=1).dropna()
+    aligned.columns = ["portfolio", "sp500"]
+    if len(aligned) > 1:
+        cov_matrix = np.cov(aligned["portfolio"], aligned["sp500"])
+        beta = cov_matrix[0, 1] / cov_matrix[1, 1]
+        alpha = (aligned["portfolio"].mean() - beta * aligned["sp500"].mean()) * 252
+        b1, b2 = st.columns(2)
+        b1.metric("📐 Beta", f"{beta:.2f}")
+        b2.metric("🎯 Alpha (ann.)", f"{alpha:.2%}")

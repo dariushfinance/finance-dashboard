@@ -6,6 +6,7 @@ from psycopg2.extras import RealDictCursor
 import yfinance as yf
 from datetime import datetime
 import requests
+import numpy as np
 from benchmark import show_benchmark
 
 # --- Konfiguration ---
@@ -124,6 +125,15 @@ def plot_portfolio_history_accurate(df, current_user):
         fig = px.area(daily_values, y="Total_Value", title=f"Historie: {current_user}")
         fig.update_traces(line_color='#22c55e', fillcolor='rgba(34, 197, 94, 0.2)')
         st.plotly_chart(fig, use_container_width=True)
+
+        daily_ret = daily_values["Total_Value"].pct_change().dropna()
+        if len(daily_ret) > 1:
+            excess = daily_ret - 0.04 / 252
+            sharpe = (excess.mean() / excess.std()) * np.sqrt(252)
+            volatility = daily_ret.std() * np.sqrt(252)
+            sv1, sv2 = st.columns(2)
+            sv1.metric("⚡ Sharpe Ratio", f"{sharpe:.2f}")
+            sv2.metric("📉 Volatilität (ann.)", f"{volatility:.1%}")
     except Exception as e:
         st.error(f"Fehler im Chart: {e}")
 # --- UI ---
@@ -139,9 +149,12 @@ with st.sidebar:
     
     if st.button("✅ Hinzufügen", use_container_width=True):
         if ticker and current_user:
-            add_position(current_user, ticker, shares, buy_price, buy_date)
-            st.cache_data.clear()
-            st.rerun()
+            if get_current_price(ticker) == 0.0:
+                st.error(f"'{ticker}' nicht gefunden. Bitte gültiges Ticker-Symbol eingeben (z.B. AAPL, MSFT).")
+            else:
+                add_position(current_user, ticker, shares, buy_price, buy_date)
+                st.cache_data.clear()
+                st.rerun()
 
 st.title("📈 Portfolio Intelligence Tool")
 

@@ -136,6 +136,68 @@ def plot_portfolio_history_accurate(df, current_user):
             sv2.metric("📉 Volatilität (ann.)", f"{volatility:.1%}")
     except Exception as e:
         st.error(f"Fehler im Chart: {e}")
+
+# --- Fundamentals / Comps ---
+@st.cache_data(ttl=3600)
+def get_fundamentals(ticker):
+    try:
+        info = yf.Ticker(ticker).info
+        market_cap = info.get("marketCap")
+        fcf = info.get("freeCashflow")
+        return {
+            "Ticker": ticker,
+            "P/E": info.get("trailingPE"),
+            "EV/EBITDA": info.get("enterpriseToEbitda"),
+            "P/S": info.get("priceToSalesTrailing12Months"),
+            "Gross Margin": info.get("grossMargins"),
+            "Net Margin": info.get("profitMargins"),
+            "ROE": info.get("returnOnEquity"),
+            "Debt/Equity": info.get("debtToEquity"),
+            "Rev Growth": info.get("revenueGrowth"),
+            "FCF Yield": (fcf / market_cap) if fcf and market_cap else None,
+        }
+    except Exception:
+        return {"Ticker": ticker}
+
+def show_fundamentals(df):
+    st.subheader("🏦 Company Fundamentals")
+    tickers = df["ticker"].unique().tolist()
+    with st.spinner("Lade Fundamentaldaten..."):
+        rows = [get_fundamentals(t) for t in tickers]
+    comp_df = pd.DataFrame(rows).set_index("Ticker")
+
+    def fmt_mult(x): return f"{x:.1f}x" if pd.notna(x) else "—"
+    def fmt_pct(x):  return f"{x:.1%}" if pd.notna(x) else "—"
+
+    fmt = {
+        "P/E": fmt_mult, "EV/EBITDA": fmt_mult, "P/S": fmt_mult, "Debt/Equity": fmt_mult,
+        "Gross Margin": fmt_pct, "Net Margin": fmt_pct, "ROE": fmt_pct,
+        "Rev Growth": fmt_pct, "FCF Yield": fmt_pct,
+    }
+    styled = comp_df.style.format(fmt)
+    for col in ["Gross Margin", "Net Margin", "ROE", "Rev Growth", "FCF Yield"]:
+        if col in comp_df.columns and comp_df[col].notna().any():
+            styled = styled.background_gradient(subset=[col], cmap="RdYlGn", vmin=0)
+    for col in ["P/E", "EV/EBITDA", "P/S", "Debt/Equity"]:
+        if col in comp_df.columns and comp_df[col].notna().any():
+            styled = styled.background_gradient(subset=[col], cmap="RdYlGn_r")
+    st.dataframe(styled, use_container_width=True)
+
+    with st.expander("📖 Metric Guide"):
+        st.markdown("""
+| Metric | What it means | Benchmark |
+|---|---|---|
+| **EV/EBITDA** | Core IB valuation multiple | <10x cheap · >20x growth premium |
+| **P/E** | Price / Earnings | Compare within sector |
+| **P/S** | Price / Sales | Useful for unprofitable growth cos |
+| **Gross Margin** | Revenue − COGS / Revenue | >40% = strong pricing power |
+| **Net Margin** | Bottom-line profitability | >10% healthy |
+| **ROE** | Return on equity | >15% (Buffett benchmark) |
+| **Debt/Equity** | Leverage ratio | <2x comfortable for PE |
+| **Rev Growth** | YoY revenue growth | |
+| **FCF Yield** | Free Cash Flow / Market Cap | >5% = PE-attractive |
+        """)
+
 # --- UI ---
 with st.sidebar:
     st.header("👤 Benutzerprofil")
@@ -208,3 +270,7 @@ if admin_key == st.secrets["ADMIN_PASSWORD"]:
 st.divider()
 if not df.empty:
     show_benchmark(df)
+
+st.divider()
+if not df.empty:
+    show_fundamentals(df)
